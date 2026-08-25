@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Estantería — Biblioteca de videojuegos</title>
+<script src="https://accounts.google.com/gsi/client"></script>
+<style>
+  :root{
+    --bg:#12141c;
+    --surface:#1b1f2b;
+    --surface-2:#232838;
+    --gold:#e8b33d;
+    --teal:#4fd1c5;
+    --text:#f3efe4;
+    --muted:#8a8fa3;
+    --danger:#e8615a;
+    --font-display:'Bebas Neue', 'Arial Narrow', sans-serif;
+    --font-body:'Inter', -apple-system, sans-serif;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100%;}
+  .app{min-height:100vh;padding:20px 16px 60px;max-width:900px;margin:0 auto;}
+
+  .header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+  .title-wrap h1{font-family:var(--font-display);font-size:36px;letter-spacing:1px;margin:0;line-height:0.9;color:var(--gold);}
+  .title-wrap p{margin:2px 0 0;color:var(--muted);font-size:13px;}
+  .header-actions{display:flex;gap:8px;align-items:center;}
+
+  .btn{background:var(--gold);color:#12141c;border:none;border-radius:10px;padding:11px 15px;font-weight:700;font-size:13px;font-family:var(--font-body);cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap;transition:transform .15s ease;}
+  .btn:hover{transform:translateY(-1px);}
+  .btn.secondary{background:var(--surface-2);color:var(--text);border:1px solid #2a2f40;}
+  .btn.danger{background:transparent;color:var(--danger);border:1.5px solid var(--danger);}
+  .icon-btn{background:var(--surface-2);border:1px solid #2a2f40;color:var(--text);border-radius:9px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;}
+
+  .status-pill{font-size:11px;padding:5px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;font-weight:600;}
+  .status-pill.ok{background:rgba(79,209,197,0.15);color:var(--teal);}
+  .status-pill.off{background:rgba(232,97,90,0.15);color:var(--danger);}
+
+  .stats{display:flex;gap:18px;margin-bottom:20px;padding:14px 16px;background:var(--surface);border-radius:12px;border:1px solid #2a2f40;}
+  .stat{display:flex;flex-direction:column;}
+  .stat .num{font-family:var(--font-display);font-size:26px;color:var(--teal);line-height:1;}
+  .stat .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(130px,1fr));gap:14px;}
+  .card{background:var(--surface);border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid #262b3b;position:relative;transition:transform .15s ease;}
+  .card:hover{transform:translateY(-3px);}
+  .card .cover{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#0e1017;}
+  .card .cover-placeholder{width:100%;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;background:#0e1017;color:var(--muted);font-size:26px;}
+  .card .platform-tab{position:absolute;top:8px;left:8px;font-size:9px;font-weight:700;letter-spacing:.4px;padding:3px 7px;border-radius:5px;background:rgba(18,20,28,0.85);color:var(--gold);text-transform:uppercase;}
+  .card .info{padding:8px 9px 10px;}
+  .card .info .t{font-size:12.5px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .card .info .y{font-size:10.5px;color:var(--muted);margin-top:3px;}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);border:1.5px dashed #2a2f40;border-radius:14px;}
+  .empty .icon{font-size:42px;margin-bottom:10px;}
+  .empty h3{color:var(--text);font-family:var(--font-display);font-size:22px;letter-spacing:.5px;margin:6px 0 4px;}
+
+  .overlay{position:fixed;inset:0;background:rgba(8,9,13,0.82);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;backdrop-filter:blur(2px);}
+  .modal{background:var(--surface);border-radius:16px;max-width:440px;width:100%;overflow:hidden;border:1px solid #2a2f40;max-height:90vh;display:flex;flex-direction:column;}
+  .modal img.cover-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#0e1017;}
+  .modal-body{padding:18px 20px 20px;overflow-y:auto;}
+  .modal-body h2{font-family:var(--font-display);font-size:26px;letter-spacing:.5px;margin:0 0 4px;color:var(--gold);}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px;}
+  .chip{background:var(--surface-2);color:var(--teal);font-size:11px;font-weight:600;padding:4px 9px;border-radius:20px;}
+  .desc{font-size:13.5px;line-height:1.55;color:#cfcbc0;margin:0 0 18px;white-space:pre-wrap;}
+  .modal-actions{display:flex;gap:10px;}
+  .modal-actions .btn{flex:1;justify-content:center;}
+
+  form.game-form label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;font-weight:600;}
+  form.game-form input[type=text], form.game-form textarea{
+    width:100%;background:var(--surface-2);border:1px solid #2a2f40;color:var(--text);
+    border-radius:8px;padding:10px 11px;font-size:13.5px;font-family:var(--font-body);
+  }
+  form.game-form textarea{min-height:70px;resize:vertical;}
+  form.game-form .photo-row{display:flex;align-items:center;gap:12px;margin-top:8px;}
+  form.game-form .photo-preview{width:70px;height:70px;border-radius:8px;object-fit:cover;background:#0e1017;border:1px solid #2a2f40;}
+  form.game-form input[type=file]{display:none;}
+
+  .setup-card{background:var(--surface);border:1px solid #2a2f40;border-radius:14px;padding:22px;margin-top:10px;}
+  .setup-card h3{font-family:var(--font-display);font-size:22px;letter-spacing:.5px;color:var(--gold);margin:0 0 8px;}
+  .setup-card p{font-size:13px;color:var(--muted);line-height:1.5;}
+  .setup-card input[type=text]{width:100%;background:var(--surface-2);border:1px solid #2a2f40;color:var(--text);border-radius:8px;padding:11px;font-size:13px;margin:10px 0 14px;}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid #2a2f40;color:var(--text);padding:12px 18px;border-radius:30px;font-size:13px;display:flex;align-items:center;gap:10px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,0.4);max-width:90%;}
+  .toast.error{background:#3a1f1f;border-color:var(--danger);color:#ffd7d4;border-radius:12px;}
+  .spinner{width:15px;height:15px;border:2px solid #3a3f52;border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div id="root" class="app"></div>
+
+<script>
+(function(){
+  const SCOPE = 'https://www.googleapis.com/auth/drive.file';
+  const FOLDER_NAME = 'BibliotecaVideojuegos';
+  const META_NAME = 'biblioteca.json';
+
+  let clientId = localStorage.getItem('gdrive-client-id') || '';
+  let folderId = localStorage.getItem('gdrive-folder-id') || null;
+  let metaFileId = localStorage.getItem('gdrive-meta-id') || null;
+  let accessToken = null;
+  let tokenClient = null;
+  let games = [];
+  let ready = false;      // token client initialised
+  let connected = false;  // has a valid access token
+  let syncing = false;
+  let toast = null;       // {type:'loading'|'error', msg}
+  let activeGame = null;
+  let editing = null;     // game object being added/edited, or {} for new
+  const imgCache = new Map(); // driveFileId -> objectURL
+
+  function setToast(t){ toast = t; render(); }
+
+  // ---------- Google auth ----------
+  function initTokenClient(){
+    if(!clientId) return;
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: SCOPE,
+      callback: async (resp)=>{
+        if(resp.error){
+          setToast({type:'error', msg:'No se pudo conectar con Google: ' + resp.error});
+          return;
+        }
+        accessToken = resp.access_token;
+        connected = true;
+        await afterConnect();
+      }
+    });
+    ready = true;
+    // intento de reconexión silenciosa
+    tokenClient.requestAccessToken({prompt:''});
+    render();
+  }
+
+  function connectDrive(){
+    if(!tokenClient) return;
+    tokenClient.requestAccessToken({prompt:'consent'});
+  }
+
+  async function driveFetch(url, options={}, retry=true){
+    const headers = Object.assign({}, options.headers, { Authorization: 'Bearer ' + accessToken });
+    const res = await fetch(url, Object.assign({}, options, {headers}));
+    if(res.status === 401 && retry){
+      await new Promise(resolve=>{
+        tokenClient.callback = async (resp)=>{
+          if(!resp.error){ accessToken = resp.access_token; }
+          resolve();
+        };
+        tokenClient.requestAccessToken({prompt:''});
+      });
+      return driveFetch(url, options, false);
+    }
+    return res;
+  }
+
+  // ---------- Drive setup (folder + metadata file) ----------
+  async function ensureFolder(){
+    if(folderId){
+      const check = await driveFetch('https://www.googleapis.com/drive/v3/files/'+folderId+'?fields=id,trashed');
+      if(check.ok){
+        const d = await check.json();
+        if(!d.trashed) return folderId;
+      }
+      folderId = null;
+    }
+    const q = encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and name='${FOLDER_NAME}' and trashed=false`);
+    const search = await driveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+    const sdata = await search.json();
+    if(sdata.files && sdata.files.length>0){
+      folderId = sdata.files[0].id;
+    }else{
+      const create = await driveFetch('https://www.googleapis.com/drive/v3/files', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({name: FOLDER_NAME, mimeType:'application/vnd.google-apps.folder'})
+      });
+      const cdata = await create.json();
+      folderId = cdata.id;
+    }
+    localStorage.setItem('gdrive-folder-id', folderId);
+    return folderId;
+  }
+
+  async function ensureMetaFile(){
+    if(metaFileId){
+      const check = await driveFetch('https://www.googleapis.com/drive/v3/files/'+metaFileId+'?fields=id,trashed');
+      if(check.ok){
+        const d = await check.json();
+        if(!d.trashed) return metaFileId;
+      }
+      metaFileId = null;
+    }
+    const q = encodeURIComponent(`'${folderId}' in parents and name='${META_NAME}' and trashed=false`);
+    const search = await driveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+    const sdata = await search.json();
+    if(sdata.files && sdata.files.length>0){
+      metaFileId = sdata.files[0].id;
+    }else{
+      metaFileId = await uploadFile(META_NAME, 'application/json', new Blob(['[]'], {type:'application/json'}), [folderId]);
+    }
+    localStorage.setItem('gdrive-meta-id', metaFileId);
+    return metaFileId;
+  }
+
+  async function afterConnect(){
+    try{
+      await ensureFolder();
+      await ensureMetaFile();
+      await loadLibrary();
+    }catch(e){
+      setToast({type:'error', msg:'Fallo preparando tu Drive: ' + e.message});
+    }
+    render();
+  }
+
+  async function loadLibrary(){
+    const res = await driveFetch('https://www.googleapis.com/drive/v3/files/'+metaFileId+'?alt=media');
+    if(!res.ok) throw new Error('No se pudo leer la biblioteca de Drive');
+    const text = await res.text();
+    games = text ? JSON.parse(text) : [];
+    render();
+  }
+
+  async function saveLibrary(){
+    syncing = true; render();
+    try{
+      await driveFetch('https://www.googleapis.com/upload/drive/v3/files/'+metaFileId+'?uploadType=media', {
+        method:'PATCH',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(games)
+      });
+    }catch(e){
+      setToast({type:'error', msg:'No se pudo sincronizar con Drive: ' + e.message});
+    }
+    syncing = false; render();
+  }
+
+  async function uploadFile(name, mimeType, blob, parents){
+    const metadata = { name, mimeType };
+    if(parents) metadata.parents = parents;
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+    form.append('file', blob);
+    const res = await driveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+      method:'POST', body: form
+    });
+    if(!res.ok) throw new Error('No se pudo subir el archivo a Drive');
+    const data = await res.json();
+    return data.id;
+  }
+
+  async function trashFile(fileId){
+    try{
+      await driveFetch('https://www.googleapis.com/drive/v3/files/'+fileId, {
+        method:'PATCH',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({trashed:true})
+      });
+    }catch(e){ /* no bloqueamos el borrado local por esto */ }
+  }
+
+  async function getPhotoUrl(fileId){
+    if(imgCache.has(fileId)) return imgCache.get(fileId);
+    const res = await driveFetch('https://www.googleapis.com/drive/v3/files/'+fileId+'?alt=media');
+    if(!res.ok) return null;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    imgCache.set(fileId, url);
+    return url;
+  }
+
+  function compressImage(file, maxW){
+    maxW = maxW || 800;
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = e=>{
+        const img = new Image();
+        img.onload = ()=>{
+          const scale = Math.min(1, maxW/img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width*scale;
+          canvas.height = img.height*scale;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img,0,0,canvas.width,canvas.height);
+          canvas.toBlob(b=>resolve(b), 'image/jpeg', 0.78);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ---------- CRUD ----------
+  async function submitGameForm(form){
+    const titulo = form.titulo.value.trim();
+    if(!titulo){ setToast({type:'error', msg:'Ponle al menos un título al juego.'}); return; }
+    setToast({type:'loading', msg: editing.fotoId || !form._file ? 'Guardando...' : 'Subiendo foto a Drive...'});
+    let fotoId = editing.fotoId || null;
+    try{
+      if(form._file){
+        const blob = await compressImage(form._file, 800);
+        fotoId = await uploadFile('foto_'+Date.now()+'.jpg', 'image/jpeg', blob, [folderId]);
+      }
+      const entry = {
+        id: editing.id || ('g_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)),
+        titulo,
+        plataforma: form.plataforma.value.trim() || '—',
+        anio: form.anio.value.trim() || '—',
+        genero: form.genero.value.trim() || '—',
+        notas: form.notas.value.trim(),
+        fotoId,
+        fecha: editing.fecha || new Date().toISOString()
+      };
+      if(editing.id){
+        games = games.map(g=> g.id===entry.id ? entry : g);
+      }else{
+        games = [entry, ...games];
+      }
+      await saveLibrary();
+      editing = null;
+      toast = null;
+    }catch(e){
+      setToast({type:'error', msg:'No se pudo guardar el juego: ' + e.message});
+    }
+    render();
+  }
+
+  async function deleteGame(id){
+    const g = games.find(x=>x.id===id);
+    if(!g) return;
+    games = games.filter(x=>x.id!==id);
+    activeGame = null;
+    await saveLibrary();
+    if(g.fotoId) trashFile(g.fotoId);
+    render();
+  }
+
+  // ---------- UI ----------
+  function escapeHtml(str){
+    return String(str==null?'':str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function platformColor(p){
+    const s=(p||'').toLowerCase();
+    if(s.includes('play')) return '#5b8def';
+    if(s.includes('xbox')) return '#3ea44b';
+    if(s.includes('switch')||s.includes('nintendo')) return '#e8615a';
+    if(s.includes('pc')) return '#8a8fa3';
+    return '#e8b33d';
+  }
+
+  function render(){
+    const root = document.getElementById('root');
+    let html = '';
+
+    html += '<div class="header"><div class="title-wrap"><h1>MI ESTANTERIA</h1><p>Guardada en tu Google Drive</p></div>';
+    html += '<div class="header-actions">';
+    if(clientId){
+      html += connected ? '<span class="status-pill ok">● Conectado</span>' : '<span class="status-pill off">● Sin conectar</span>';
+      html += '<button class="icon-btn" id="btnSettings" title="Ajustes">⚙️</button>';
+      if(connected){ html += '<button class="btn" id="btnAdd">+ Añadir juego</button>'; }
+      else { html += '<button class="btn" id="btnConnect">Conectar Drive</button>'; }
+    }else{
+      html += '<button class="icon-btn" id="btnSettings" title="Ajustes">⚙️</button>';
+    }
+    html += '</div></div>';
+
+    if(!clientId){
+      html += renderSetup();
+    }else if(!connected){
+      html += '<div class="empty"><div class="icon">🔌</div><h3>Conecta tu Google Drive</h3><p>Pulsa "Conectar Drive" arriba para cargar tu biblioteca.</p></div>';
+    }else{
+      html += '<div class="stats"><div class="stat"><span class="num">'+games.length+'</span><span class="lbl">Juegos</span></div>';
+      html += '<div class="stat"><span class="num">'+new Set(games.map(g=>g.plataforma)).size+'</span><span class="lbl">Plataformas</span></div></div>';
+
+      if(games.length===0){
+        html += '<div class="empty"><div class="icon">🎮</div><h3>Estanteria vacia</h3><p>Añade tu primer juego con el botón de arriba.</p></div>';
+      }else{
+        html += '<div class="grid">';
+        games.forEach(g=>{
+          html += '<div class="card" data-id="'+g.id+'">';
+          html += '<span class="platform-tab" style="color:'+platformColor(g.plataforma)+'">'+escapeHtml(g.plataforma)+'</span>';
+          if(g.fotoId && imgCache.has(g.fotoId)){
+            html += '<img class="cover" src="'+imgCache.get(g.fotoId)+'" alt="">';
+          }else if(g.fotoId){
+            html += '<div class="cover-placeholder" data-loadimg="'+g.fotoId+'">⏳</div>';
+          }else{
+            html += '<div class="cover-placeholder">🎮</div>';
+          }
+          html += '<div class="info"><div class="t">'+escapeHtml(g.titulo)+'</div><div class="y">'+escapeHtml(g.anio)+'</div></div>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+    }
+
+    root.innerHTML = html;
+    attachListeners();
+    lazyLoadImages();
+    renderModal();
+    renderToast();
+  }
+
+  function renderSetup(){
+    return `
+      <div class="setup-card">
+        <h3>Configura tu conexión</h3>
+        <p>Pega aquí el Client ID de Google Cloud que creaste siguiendo la guía (termina en .apps.googleusercontent.com). Se guarda solo en este navegador.</p>
+        <input type="text" id="clientIdInput" placeholder="123456789-abc...apps.googleusercontent.com">
+        <button class="btn" id="btnSaveClientId">Guardar y continuar</button>
+      </div>
+    `;
+  }
+
+  function attachListeners(){
+    const btnSaveClientId = document.getElementById('btnSaveClientId');
+    if(btnSaveClientId){
+      btnSaveClientId.addEventListener('click', ()=>{
+        const val = document.getElementById('clientIdInput').value.trim();
+        if(!val){ setToast({type:'error', msg:'Pega un Client ID válido.'}); return; }
+        clientId = val;
+        localStorage.setItem('gdrive-client-id', clientId);
+        initTokenClient();
+      });
+    }
+    const btnConnect = document.getElementById('btnConnect');
+    if(btnConnect) btnConnect.addEventListener('click', connectDrive);
+
+    const btnSettings = document.getElementById('btnSettings');
+    if(btnSettings) btnSettings.addEventListener('click', ()=>{
+      if(confirm('¿Quitar el Client ID guardado y volver a la pantalla de configuración?')){
+        localStorage.removeItem('gdrive-client-id');
+        localStorage.removeItem('gdrive-folder-id');
+        localStorage.removeItem('gdrive-meta-id');
+        location.reload();
+      }
+    });
+
+    const btnAdd = document.getElementById('btnAdd');
+    if(btnAdd) btnAdd.addEventListener('click', ()=>{ editing = {}; renderModal(); });
+
+    document.querySelectorAll('.card').forEach(card=>{
+      card.addEventListener('click', ()=>{
+        activeGame = games.find(g=>g.id===card.dataset.id);
+        renderModal();
+      });
+    });
+  }
+
+  function lazyLoadImages(){
+    document.querySelectorAll('[data-loadimg]').forEach(async el=>{
+      const fileId = el.getAttribute('data-loadimg');
+      const url = await getPhotoUrl(fileId);
+      if(url){
+        const img = document.createElement('img');
+        img.className = 'cover';
+        img.src = url;
+        el.replaceWith(img);
+      }
+    });
+  }
+
+  function renderModal(){
+    let existing = document.querySelector('.overlay');
+    if(existing) existing.remove();
+
+    if(editing !== null){
+      const g = editing;
+      const div = document.createElement('div');
+      div.className = 'overlay';
+      div.innerHTML = `
+        <div class="modal">
+          <div class="modal-body">
+            <h2>${g.id ? 'Editar juego' : 'Nuevo juego'}</h2>
+            <form class="game-form" id="gameForm">
+              <label>Foto (opcional)</label>
+              <div class="photo-row">
+                <img class="photo-preview" id="photoPreview" src="${g.fotoId && imgCache.has(g.fotoId) ? imgCache.get(g.fotoId) : ''}" style="${g.fotoId && imgCache.has(g.fotoId) ? '' : 'display:none;'}">
+                <label class="btn secondary" for="photoInput" style="margin:0;">📷 Elegir foto</label>
+                <input type="file" id="photoInput" accept="image/*" capture="environment">
+              </div>
+              <label>Título *</label>
+              <input type="text" name="titulo" value="${escapeHtml(g.titulo||'')}" required>
+              <label>Plataforma</label>
+              <input type="text" name="plataforma" value="${escapeHtml(g.plataforma&&g.plataforma!=='—'?g.plataforma:'')}" placeholder="PS5, Switch, Xbox, PC...">
+              <label>Año</label>
+              <input type="text" name="anio" value="${escapeHtml(g.anio&&g.anio!=='—'?g.anio:'')}" placeholder="2019">
+              <label>Género</label>
+              <input type="text" name="genero" value="${escapeHtml(g.genero&&g.genero!=='—'?g.genero:'')}" placeholder="Aventura, RPG...">
+              <label>Notas</label>
+              <textarea name="notas">${escapeHtml(g.notas||'')}</textarea>
+              <div class="modal-actions" style="margin-top:18px;">
+                <button type="button" class="btn secondary" id="btnCancelForm">Cancelar</button>
+                <button type="submit" class="btn">Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(div);
+      let selectedFile = null;
+      document.getElementById('photoInput').addEventListener('change', (e)=>{
+        selectedFile = e.target.files[0];
+        if(selectedFile){
+          const reader = new FileReader();
+          reader.onload = ev=>{
+            const prev = document.getElementById('photoPreview');
+            prev.src = ev.target.result;
+            prev.style.display = 'block';
+          };
+          reader.readAsDataURL(selectedFile);
+        }
+      });
+      document.getElementById('btnCancelForm').addEventListener('click', ()=>{ editing = null; renderModal(); });
+      document.getElementById('gameForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        e.target._file = selectedFile;
+        submitGameForm(e.target);
+      });
+      div.addEventListener('click', (e)=>{ if(e.target===div){ editing = null; renderModal(); } });
+      return;
+    }
+
+    if(!activeGame) return;
+    const g = activeGame;
+    const div = document.createElement('div');
+    div.className = 'overlay';
+    const imgSrc = g.fotoId && imgCache.has(g.fotoId) ? imgCache.get(g.fotoId) : '';
+    div.innerHTML = `
+      <div class="modal">
+        ${imgSrc ? `<img class="cover-img" src="${imgSrc}">` : ''}
+        <div class="modal-body">
+          <h2>${escapeHtml(g.titulo)}</h2>
+          <div class="meta">
+            <span class="chip">${escapeHtml(g.plataforma)}</span>
+            <span class="chip">${escapeHtml(g.anio)}</span>
+            <span class="chip">${escapeHtml(g.genero)}</span>
+          </div>
+          ${g.notas ? `<p class="desc">${escapeHtml(g.notas)}</p>` : ''}
+          <div class="modal-actions">
+            <button class="btn secondary" id="btnCloseModal">Cerrar</button>
+            <button class="btn secondary" id="btnEditModal">Editar</button>
+            <button class="btn danger" id="btnDelModal">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    `;
+    div.addEventListener('click', (e)=>{ if(e.target===div){ activeGame=null; renderModal(); } });
+    document.body.appendChild(div);
+    document.getElementById('btnCloseModal').addEventListener('click', ()=>{ activeGame=null; renderModal(); });
+    document.getElementById('btnEditModal').addEventListener('click', ()=>{ editing = g; activeGame=null; renderModal(); });
+    document.getElementById('btnDelModal').addEventListener('click', ()=>{ if(confirm('¿Eliminar "'+g.titulo+'" de tu biblioteca?')) deleteGame(g.id); });
+  }
+
+  function renderToast(){
+    document.querySelectorAll('.toast').forEach(t=>t.remove());
+    let show = null;
+    if(syncing) show = {type:'loading', msg:'Sincronizando con Drive...'};
+    else if(toast) show = toast;
+    if(!show) return;
+    const t = document.createElement('div');
+    t.className = 'toast' + (show.type==='error' ? ' error' : '');
+    t.innerHTML = (show.type==='loading' ? '<div class="spinner"></div>' : '') + escapeHtml(show.msg);
+    document.body.appendChild(t);
+    if(show.type==='error'){
+      setTimeout(()=>{ if(toast===show){ toast=null; renderToast(); } }, 6000);
+    }
+  }
+
+  // ---------- arranque ----------
+  render();
+  if(clientId){
+    if(window.google && google.accounts){
+      initTokenClient();
+    }else{
+      window.addEventListener('load', initTokenClient);
+    }
+  }
+})();
+</script>
+</body>
+</html>
